@@ -1,0 +1,102 @@
+---
+title: "Bulk_RNAseq_Nick"
+author: "Osman Sharifi"
+date: '2022-07-01'
+output: html_document
+---
+Load libraries 
+```{r setup, include=FALSE}
+library(ggplot2)
+library(glue)
+library(tidyr)
+library(viridis)
+library(dplyr)
+```
+
+Let's load all of your data in today systematically and create a data frame that contains the Ontology info and the corresponding samples
+
+```{r load the data}
+#cyto_vs_cntrl
+main_path = "/Users/osman/Documents/GitHub/Bulk_RNAseq_Visualization/Pathway_analysis/GO" # point this to the GO directory, the best way would be to point it to our shared github directory
+cyto_vs_cntrl_BP <- read.delim(glue::glue("{main_path}/BP/cyto_vs_cntrl_DE_analysis_GO_BP.txt"), header = TRUE, sep = "\t")
+cyto_vs_cntrl_BP$Ontology <- "Biological Process"
+cyto_vs_cntrl_MF <- read.delim(glue::glue("{main_path}/MF/cyto_vs_cntrl_DE_analysis_GO_MF.txt"), header = TRUE, sep = "\t")
+cyto_vs_cntrl_MF$Ontology <- "Molecular Function"
+cyto_vs_cntrl_CC <- read.delim(glue::glue("{main_path}/CC/cyto_vs_cntrl_DE_analysis_GO_CC.txt"), header = TRUE, sep = "\t")
+cyto_vs_cntrl_CC$Ontology <- "Cellular Component"
+cyto_vs_cntrl <- rbind(cyto_vs_cntrl_BP,cyto_vs_cntrl_CC,cyto_vs_cntrl_MF)
+cyto_vs_cntrl$Sample <- "cyto_vs_cntrl"
+
+#pita_and_cyto_vs_cyto
+pita_and_cyto_vs_cyto_BP <- read.delim(glue::glue("{main_path}/BP/pita_and_cyto_vs_cyto_DE_analysis_GO_BP.txt"), header = TRUE, sep = "\t") 
+pita_and_cyto_vs_cyto_BP$Ontology <- "Biological Process"
+pita_and_cyto_vs_cyto_MF <- read.delim(glue::glue("{main_path}/MF/pita_and_cyto_vs_cyto_DE_analysis_GO_MF.txt"), header = TRUE, sep = "\t")
+pita_and_cyto_vs_cyto_MF$Ontology <- "Molecular Function"
+pita_and_cyto_vs_cyto_CC <- read.delim(glue::glue("{main_path}/CC/pita_and_cyto_vs_cyto_DE_analysis_GO_CC.txt"), header = TRUE, sep = "\t")
+pita_and_cyto_vs_cyto_CC$Ontology <- "Cellular Component"
+pita_and_cyto_vs_cyto <- rbind(pita_and_cyto_vs_cyto_BP,pita_and_cyto_vs_cyto_CC,pita_and_cyto_vs_cyto_MF)
+pita_and_cyto_vs_cyto$Sample <- "pita_and_cyto_vs_cyto"
+
+#cyto_vs_pita
+cyto_vs_pita_BP <- read.delim(glue::glue("{main_path}/BP/cyto_vs_pita_DE_analysis_GO_BP.txt"), header = TRUE, sep = "\t") 
+cyto_vs_pita_BP$Ontology <- "Biological Process"
+cyto_vs_pita_MF <- read.delim(glue::glue("{main_path}/MF/cyto_vs_pita_DE_analysis_GO_MF.txt"), header = TRUE, sep = "\t")
+cyto_vs_pita_MF$Ontology <- "Molecular Function"
+cyto_vs_pita_CC <- read.delim(glue::glue("{main_path}/CC/cyto_vs_pita_DE_analysis_GO_CC.txt"), header = TRUE, sep = "\t")
+cyto_vs_pita_CC$Ontology <- "Cellular Component"
+cyto_vs_pita <- rbind(cyto_vs_pita_BP,cyto_vs_pita_CC,cyto_vs_pita_MF)
+cyto_vs_pita$Sample <- "cyto_vs_pita"
+
+#pita_and_cyto_vs_pita
+pita_and_cyto_vs_pita_BP <- read.delim(glue::glue("{main_path}/BP/pita_and_cyto_vs_pita_DE_analysis_GO_BP.txt"), header = TRUE, sep = "\t") 
+pita_and_cyto_vs_pita_BP$Ontology <- "Biological Process"
+pita_and_cyto_vs_pita_MF <- read.delim(glue::glue("{main_path}/MF/pita_and_cyto_vs_pita_DE_analysis_GO_MF.txt"), header = TRUE, sep = "\t")
+pita_and_cyto_vs_pita_MF$Ontology <- "Molecular Function"
+pita_and_cyto_vs_pita_CC <- read.delim(glue::glue("{main_path}/CC/pita_and_cyto_vs_pita_DE_analysis_GO_CC.txt"), header = TRUE, sep = "\t")
+pita_and_cyto_vs_pita_CC$Ontology <- "Cellular Component"
+pita_and_cyto_vs_pita <- rbind(pita_and_cyto_vs_pita_BP,pita_and_cyto_vs_pita_CC,pita_and_cyto_vs_pita_MF)
+pita_and_cyto_vs_pita$Sample <- "pita_and_cyto_vs_pita"
+
+```
+We will now process the data so you get the top5 of each ontology and each sample
+```{r process the data}
+test <- cyto_vs_cntrl %>% 
+  select(Term, Raw.P.Value, Ontology) %>%
+  group_by(Ontology) %>% 
+  slice_min(order_by = Raw.P.Value, n = 5)
+```
+Let's now plot this in a visually appealing way
+```{r visualize data}
+ggplot(test,
+       aes(x = Term, y = Ontology, shape = Ontology, color = Raw.P.Value)) +
+  geom_point(size = 5) +
+  scale_size(range = c(2.5,12.5)) +
+  scale_fill_viridis() + 
+  xlab('') + ylab('Ontology') +
+  labs(
+    title = 'Top 5 GO Terms',
+    subtitle = 'cyto_vs_cntrl '
+  )  +   
+  
+  theme_bw(base_size = 24) +
+  theme(
+    legend.position = 'right',
+    legend.background = element_rect(),
+    plot.title = element_text(angle = 0, size = 16, face = 'bold', vjust = 1),
+    plot.subtitle = element_text(angle = 0, size = 14, face = 'bold', vjust = 1),
+    plot.caption = element_text(angle = 0, size = 12, face = 'bold', vjust = 1),
+    
+    axis.text.x = element_text(angle = 90, size = 14, face = 'bold', hjust = 1.0, vjust = 0.5),
+    axis.text.y = element_text(angle = 0, size = 14, face = 'bold', vjust = 0.5),
+    axis.title = element_text(size = 14, face = 'bold'),
+    axis.title.x = element_text(size = 14, face = 'bold'),
+    axis.title.y = element_text(size = 14, face = 'bold'),
+    axis.line = element_line(colour = 'black'),
+    
+    #Legend
+    legend.key = element_blank(), # removes the border
+    legend.key.size = unit(1, "cm"), # Sets overall area/size of the legend
+    legend.text = element_text(size = 14, face = "bold"), # Text size
+    title = element_text(size = 14, face = "bold")) +
+  coord_flip()
+```
