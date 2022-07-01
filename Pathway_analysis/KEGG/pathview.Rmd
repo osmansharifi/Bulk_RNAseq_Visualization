@@ -1,0 +1,71 @@
+---
+title: "Pathview Visualizations"
+output: html_document
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F)
+```
+
+```{r, include = F}
+#if (!requireNamespace("BiocManager", quietly = TRUE))
+#  install.packages("BiocManager")
+#  BiocManager::install("org.Hs.eg.db")
+#  BiocManager::install("pathview")
+#  BiocManager::install("dplyr")
+#  BiocManager::install("kableExtra")
+# BiocManager::install("edgeR")
+
+library(org.Hs.eg.db)
+library(pathview)
+library(dplyr)
+library(kableExtra)
+```
+
+```{r}
+# gene expression
+x <- org.Hs.egENSEMBL2EG
+# Get the entrez gene IDs that are mapped to an Ensembl ID
+mapped_genes <- mappedkeys(x)
+# Convert to a dataframe
+idmap <- stack(as.list(x[mapped_genes]))
+names(idmap) <- c("entrezgene", "ensembl_gene_id")
+```
+
+```{r, results = "asis", warning = F, message = F}
+#pathways.use <- c("00600", "04071", "04920", "00061", "01040", "00410", "04152", "04150", "00190", "04923", "04975", "01212", "01230", "01200", "00561", "04932")
+pathways.use <- "04060"
+f <- function(map=map, genedata=genedata, outname=outname, kegg.dir=kegg.dir, ...){
+cat("\n")
+cat(paste(paste0("###", " hsa", map, " for ", outname, collapse=""), "\n"))
+#cat(paste("##### Legend\n"))
+#print(kable(matrix(c("M", "F"), nrow = 1), align = "c") %>% kable_styling(full_width = F, position = "left", bootstrap_options = "bordered") %>% row_spec(1, background = "grey", bold = T))
+pathview(gene.data = genedata, pathway.id = map, species = "hsa", kegg.dir=kegg.dir, out.suffix=outname)
+plot.name <- paste0("hsa", map, ".", outname, ".png", collapse="")
+cat(sprintf("![](%s)", plot.name))
+cat("\n")
+}
+```
+
+```{r, results = "asis", warning = F, message = F}
+project.dir <- "C:/Users/ndecuzzi/Desktop/Amir Data/pHBE2/"
+DE.files <- list.files(path=file.path(project.dir, "DE_analysis"), pattern = "_DE_analysis.txt")
+
+for (DE.file in DE.files){
+	map <- "04810"
+	DE <- read.delim(file.path(project.dir, "DE_analysis", DE.file))
+	DE <- dplyr::select(DE, Gene.stable.ID, logFC) %>% dplyr::rename(ensembl_gene_id = Gene.stable.ID) 
+	DE <- left_join(DE, idmap, by = "ensembl_gene_id")
+	tmp <- dplyr::select(DE, ensembl_gene_id, entrezgene, logFC)
+	fc.genes <- tmp
+	fc.genes <- subset(fc.genes, !is.na(entrezgene)) 
+	fc.genes <- arrange(fc.genes, desc(logFC)) %>% subset(!duplicated(entrezgene))
+	rownames(fc.genes) <- fc.genes$entrezgene
+	fc.genes <- dplyr::select(fc.genes, logFC)
+	outnm <- gsub(".txt", "", DE.file)
+	keggdir <- file.path(project.dir, "Pathway_analysis/KEGG")
+	
+	f(map="04810", genedata=fc.genes, outname=outnm, kegg.dir=keggdir)
+}
+```
