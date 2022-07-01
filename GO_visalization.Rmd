@@ -86,6 +86,7 @@ df <- df %>%
   select(Sample, Term, Raw.P.Value, Ontology) %>%
   group_by(Sample) %>%
   slice_min(order_by = Raw.P.Value, n = 10)
+head(df)
 ```
 Let's now plot this in a visually appealing way
 ```{r visualize data}
