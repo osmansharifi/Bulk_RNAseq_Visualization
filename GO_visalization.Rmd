@@ -13,11 +13,13 @@ library(viridis)
 library(dplyr)
 ```
 
-Let's load all of your data in today systematically and create a data frame that contains the Ontology info and the corresponding samples
+Let's load all of your data in today systematically and create a data frame that contains the Ontology info and the corresponding samples. P.S. There are more elegant ways to load the data
 
 ```{r load the data}
+# point this to the GO directory, the best way would be to point it to our shared github directory
+main_path = "/Users/osman/Documents/GitHub/Bulk_RNAseq_Visualization/Pathway_analysis/GO" 
+
 #cyto_vs_cntrl
-main_path = "/Users/osman/Documents/GitHub/Bulk_RNAseq_Visualization/Pathway_analysis/GO" # point this to the GO directory, the best way would be to point it to our shared github directory
 cyto_vs_cntrl_BP <- read.delim(glue::glue("{main_path}/BP/cyto_vs_cntrl_DE_analysis_GO_BP.txt"), header = TRUE, sep = "\t")
 cyto_vs_cntrl_BP$Ontology <- "Biological Process"
 cyto_vs_cntrl_MF <- read.delim(glue::glue("{main_path}/MF/cyto_vs_cntrl_DE_analysis_GO_MF.txt"), header = TRUE, sep = "\t")
@@ -57,27 +59,45 @@ pita_and_cyto_vs_pita_CC$Ontology <- "Cellular Component"
 pita_and_cyto_vs_pita <- rbind(pita_and_cyto_vs_pita_BP,pita_and_cyto_vs_pita_CC,pita_and_cyto_vs_pita_MF)
 pita_and_cyto_vs_pita$Sample <- "pita_and_cyto_vs_pita"
 
+#pita_and_cyto_vs_cntrl
+pita_and_cyto_vs_cntrl_BP <- read.delim(glue::glue("{main_path}/BP/pita_and_cyto_vs_cntrl_DE_analysis_GO_BP.txt"), header = TRUE, sep = "\t") 
+pita_and_cyto_vs_cntrl_BP$Ontology <- "Biological Process"
+pita_and_cyto_vs_cntrl_MF <- read.delim(glue::glue("{main_path}/MF/pita_and_cyto_vs_cntrl_DE_analysis_GO_MF.txt"), header = TRUE, sep = "\t")
+pita_and_cyto_vs_cntrl_MF$Ontology <- "Molecular Function"
+pita_and_cyto_vs_cntrl_CC <- read.delim(glue::glue("{main_path}/CC/pita_and_cyto_vs_cntrl_DE_analysis_GO_CC.txt"), header = TRUE, sep = "\t")
+pita_and_cyto_vs_cntrl_CC$Ontology <- "Cellular Component"
+pita_and_cyto_vs_cntrl <- rbind(pita_and_cyto_vs_cntrl_BP,pita_and_cyto_vs_cntrl_CC,pita_and_cyto_vs_cntrl_MF)
+pita_and_cyto_vs_cntrl$Sample <- "pita_and_cyto_vs_cntrl"
+
+#pita_vs_cntrl
+pita_vs_cntrl_BP <- read.delim(glue::glue("{main_path}/BP/pita_vs_cntrl_DE_analysis_GO_BP.txt"), header = TRUE, sep = "\t") 
+pita_vs_cntrl_BP$Ontology <- "Biological Process"
+pita_vs_cntrl_MF <- read.delim(glue::glue("{main_path}/MF/pita_vs_cntrl_DE_analysis_GO_MF.txt"), header = TRUE, sep = "\t")
+pita_vs_cntrl_MF$Ontology <- "Molecular Function"
+pita_vs_cntrl_CC <- read.delim(glue::glue("{main_path}/CC/pita_vs_cntrl_DE_analysis_GO_CC.txt"), header = TRUE, sep = "\t")
+pita_vs_cntrl_CC$Ontology <- "Cellular Component"
+pita_vs_cntrl <- rbind(pita_vs_cntrl_BP,pita_vs_cntrl_CC,pita_vs_cntrl_MF)
+pita_vs_cntrl$Sample <- "pita_vs_cntrl"
 ```
 We will now process the data so you get the top5 of each ontology and each sample
 ```{r process the data}
-test <- cyto_vs_cntrl %>% 
-  select(Term, Raw.P.Value, Ontology) %>%
-  group_by(Ontology) %>% 
-  slice_min(order_by = Raw.P.Value, n = 5)
+df <- rbind(cyto_vs_cntrl, pita_and_cyto_vs_cyto, cyto_vs_pita, pita_and_cyto_vs_pita, pita_and_cyto_vs_cntrl, pita_vs_cntrl)
+df <- df %>% 
+  select(Sample, Term, Raw.P.Value, Ontology) %>%
+  group_by(Sample) %>%
+  slice_min(order_by = Raw.P.Value, n = 10)
 ```
 Let's now plot this in a visually appealing way
 ```{r visualize data}
-ggplot(test,
-       aes(x = Term, y = Ontology, shape = Ontology, color = Raw.P.Value)) +
+ggplot(df,
+       aes(x = Term, y = Sample, shape = Ontology, color = Raw.P.Value)) +
   geom_point(size = 5) +
   scale_size(range = c(2.5,12.5)) +
   scale_fill_viridis() + 
   xlab('') + ylab('Ontology') +
   labs(
-    title = 'Top 5 GO Terms',
-    subtitle = 'cyto_vs_cntrl '
+    title = 'Top GO Terms'
   )  +   
-  
   theme_bw(base_size = 24) +
   theme(
     legend.position = 'right',
@@ -87,7 +107,7 @@ ggplot(test,
     plot.caption = element_text(angle = 0, size = 12, face = 'bold', vjust = 1),
     
     axis.text.x = element_text(angle = 90, size = 14, face = 'bold', hjust = 1.0, vjust = 0.5),
-    axis.text.y = element_text(angle = 0, size = 14, face = 'bold', vjust = 0.5),
+    axis.text.y = element_text(angle = 0, size = 12, face = 'bold', vjust = 0.5),
     axis.title = element_text(size = 14, face = 'bold'),
     axis.title.x = element_text(size = 14, face = 'bold'),
     axis.title.y = element_text(size = 14, face = 'bold'),
@@ -99,4 +119,9 @@ ggplot(test,
     legend.text = element_text(size = 14, face = "bold"), # Text size
     title = element_text(size = 14, face = "bold")) +
   coord_flip()
+
+ggplot2::ggsave(glue::glue("{main_path}/GO_ontology.pdf"),
+                device = NULL,
+                height = 8.5,
+                width = 12)
 ```
