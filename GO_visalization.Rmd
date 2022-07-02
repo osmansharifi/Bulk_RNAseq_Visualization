@@ -126,3 +126,24 @@ ggplot2::ggsave(glue::glue("{main_path}/GO_ontology.pdf"),
                 height = 8.5,
                 width = 12)
 ```
+We will start visualizing Gene expression data now
+
+```{r load data}
+library(pheatmap)
+library(biomaRt)
+expr_data <- read.delim(glue::glue("/Users/osman/Documents/GitHub/Bulk_RNAseq_Visualization/pHBEl_normalized_counts.txt"), header = TRUE, sep = "\t")
+mart <- useDataset("hsapiens_gene_ensembl", useMart("ensembl"))
+genes <- expr_data$
+df<-df[,-4]
+G_list <- getBM(filters= "ensembl_peptide_id", attributes= c("ensembl_peptide_id","hgnc_symbol"),values=genes,mart= mart)
+merge(df,G_list,by.x="gene",by.y="ensembl_peptide_id")
+head(expr_data)
+dim(expr_data)
+
+top_expr <- expr_data %>% 
+   top_n(20)
+
+library(pheatmap)
+pheatmap(top_expr,main = "Top20 genes based on expression")
+
+```
